@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Downloader</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-color: #e11d48;
+            --btn-color: #2563eb;
+            --star-color: #f59e0b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: #38bdf8;
+        }
+
+        /* Movie Grid */
+        .movie-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .movie-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            gap: 12px;
+            padding: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        .movie-poster {
+            width: 100px;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .movie-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex: 1;
+        }
+
+        .movie-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0 0 5px 0;
+        }
+
+        .badge-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .badge {
+            background: #334155;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        .rating {
+            color: var(--star-color);
+            font-weight: bold;
+        }
+
+        .download-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.2s;
+        }
+
+        .download-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Ad Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-box {
+            background: var(--card-bg);
+            width: 85%;
+            max-width: 350px;
+            padding: 20px;
+            border-radius: 14px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .ad-box {
+            background: #0f172a;
+            border: 2px dashed #475569;
+            height: 160px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .action-btn {
+            background: var(--btn-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .action-btn:disabled {
+            background: #475569;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🎬 মুভি কালেকশন</h1>
+
+    <!-- মুভির তালিকা -->
+    <div class="movie-list" id="movieList"></div>
+
+    <!-- অ্যাড দেখার পপআপ (Modal) -->
+    <div class="modal-overlay" id="adModal">
+        <div class="modal-box">
+            <h3 id="modalTitle">বিজ্ঞাপন দেখুন</h3>
+            <p id="adStepText" style="font-size: 13px; color: #94a3b8;">মুভিটি আনলক করতে ২টি অ্যাড দেখতে হবে।</p>
+            
+            <!-- অ্যাড এর জায়গা -->
+            <div class="ad-box" id="adContainer">
+                <span>[বিজ্ঞাপন লোড হচ্ছে...]</span>
+            </div>
+
+            <button id="modalBtn" class="action-btn" onclick="handleAdClick()">অ্যাড দেখুন</button>
+        </div>
+    </div>
+
+    <script>
+        // Telegram WebApp শুরু করা
+        const tg = window.Telegram?.WebApp;
+        if(tg) {
+            tg.ready();
+            tg.expand();
+        }
+
+        // মুভির ডাটাবেজ (এখানে নতুন মুভি যোগ করুন)
+        const movies = [
+            {
+                id: 1,
+                title: "Jawan (জাওয়ান)",
+                rating: "⭐ 7.8/10",
+                language: "বাংলা ডাব",
+                poster: "https://m.media-amazon.com/images/M/MV5BMjA3YmMwYjYtYmQ5YS00Nzg2LTg4MzUtN2YyNDM3NzI2Mzg4XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
+                downloadUrl: "https://example.com/download-jawan" // আসল মুভির লিংক
+            },
+            {
+                id: 2,
+                title: "Spider-Man: Across the Spider-Verse",
+                rating: "⭐ 8.7/10",
+                language: "ইংরেজি / হিন্দি",
+                poster: "https://m.media-amazon.com/images/M/MV5BMzI0NmVkMjEtYmY4MS00ZDMxLTlkZmEtMzU3MzE1OWQxNWE0XkEyXkFqcGc@._V1_.jpg",
+                downloadUrl: "https://example.com/download-spiderman"
+            }
+        ];
+
+        let selectedMovie = null;
+        let adsWatched = 0;
+        let countdown = 5; // প্রতিটি অ্যাড দেখার সময় (৫ সেকেন্ড)
+        let timerInterval = null;
+
+        // মুভি লিস্ট রেন্ডার করা
+        const movieListElement = document.getElementById('movieList');
+        movies.forEach(movie => {
+            const card = document.createElement('div');
+            card.className = 'movie-card';
+            card.innerHTML = `
+                <img src="${movie.poster}" class="movie-poster" alt="${movie.title}">
+                <div class="movie-info">
+                    <div>
+                        <div class="movie-title">${movie.title}</div>
+                        <div class="badge-container">
+                            <span class="badge rating">${movie.rating}</span>
+                            <span class="badge">${movie.language}</span>
+                        </div>
+                    </div>
+                    <button class="download-btn" onclick="openAdFlow(${movie.id})">ডাউনলোড করুন ⬇</button>
+                </div>
+            `;
+            movieListElement.appendChild(card);
+        });
+
+        // অ্যাড পপআপ ওপেন করা
+        function openAdFlow(movieId) {
+            selectedMovie = movies.find(m => m.id === movieId);
+            adsWatched = 0;
+            document.getElementById('adModal').style.display = 'flex';
+            setupAdStep();
+        }
+
+        // প্রতি স্টেপ অ্যাড সাজানো
+        function setupAdStep() {
+            const btn = document.getElementById('modalBtn');
+            const stepText = document.getElementById('adStepText');
+            const adBox = document.getElementById('adContainer');
+
+            if (adsWatched === 0) {
+                stepText.innerText = "ধাপ ১: ১ম বিজ্ঞাপনটি দেখুন (১/২)";
+                btn.innerText = "১ম অ্যাড চালু করুন";
+                btn.disabled = false;
+                adBox.innerHTML = "<span>বিজ্ঞাপন ১ তৈরি আছে</span>";
+            } else if (adsWatched === 1) {
+                stepText.innerText = "ধাপ ২: শেষ বিজ্ঞাপনটি দেখুন (২/২)";
+                btn.innerText = "২য় অ্যাড চালু করুন";
+                btn.disabled = false;
+                adBox.innerHTML = "<span>বিজ্ঞাপন ২ তৈরি আছে</span>";
+            }
+        }
+
+        // অ্যাড দেখা ও টাইমার চালনা
+        function handleAdClick() {
+            const btn = document.getElementById('modalBtn');
+            const adBox = document.getElementById('adContainer');
+            btn.disabled = true;
+
+            // এখানে আসল অ্যাড নেটওয়ার্ক কোড কল করতে পারেন (যেমন: Monetag / Adsgram)
+            adBox.innerHTML = `<b style="color:#38bdf8">বিজ্ঞাপন চলছে... অপেক্ষা করুন</b>`;
+
+            countdown = 5; // ৫ সেকেন্ড অ্যাড চলবে
+            btn.innerText = `অপেক্ষা করুন (${countdown}s)`;
+
+            timerInterval = setInterval(() => {
+                countdown--;
+                btn.innerText = `অপেক্ষা করুন (${countdown}s)`;
+
+                if (countdown <= 0) {
+                    clearInterval(timerInterval);
+                    adsWatched++;
+
+                    if (adsWatched < 2) {
+                        setupAdStep();
+                    } else {
+                        // ২টি অ্যাড দেখা শেষ! ডাউনলোড আনলক
+                        adBox.innerHTML = `<b style="color: #4ade80;">সবগুলো অ্যাড দেখা সম্পন্ন হয়েছে! ✅</b>`;
+                        btn.innerText = "মুভি ডাউনলোড করুন 🎬";
+                        btn.disabled = false;
+                        btn.style.background = "#16a34a"; // সবুজ বাটন
+                        btn.onclick = unlockDownload;
+                    }
+                }
+            }, 1000);
+        }
+
+        // আসল ডাউনলোড লিংক ওপেন করা
+        function unlockDownload() {
+            if (selectedMovie) {
+                // লিংক নতুন ট্যাবে বা টেলিগ্রামের ব্রাউজারে খুলবে
+                if (tg && tg.openLink) {
+                    tg.openLink(selectedMovie.downloadUrl);
+                } else {
+                    window.open(selectedMovie.downloadUrl, '_blank');
+                }
+            }
+            // মোডাল বন্ধ করে আগের অবস্থায় নেওয়া
+            document.getElementById('adModal').style.display = 'none';
+            location.reload(); 
+        }
+    </script>
+</body>
+</html>{
+    id: 3,
+    title: "মুভির নাম",
+    rating: "⭐ 8.0/10",
+    language: "হিন্দি / বাংলা",
+    poster: "ছবির_লিংক",
+    downloadUrl: "গুগল ড্রাইভ বা মুভি ডাউনলোড লিংক"
+}
