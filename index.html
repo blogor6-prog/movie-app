@@ -23,6 +23,7 @@
       --accent-yellow: #facc15;
       --accent-green: #22c55e;
       --accent-orange: #f97316;
+      --danger: #ef4444;
     }
 
     * {
@@ -189,12 +190,14 @@
       width: 100%;
       height: 220px;
       background: #0f172a;
+      position: relative;
     }
 
     .movie-card img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      display: block;
     }
 
     .movie-info {
@@ -241,7 +244,7 @@
       font-size: 14px;
     }
 
-    /* ২-স্টেপ অ্যাড ও ডাউনলোড মডাল */
+    /* মডাল ডিজাইন */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -263,8 +266,10 @@
       padding: 20px;
       text-align: center;
       width: 100%;
-      max-width: 320px;
+      max-width: 340px;
       border: 1px solid #475569;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     .modal-content h3 {
@@ -275,10 +280,10 @@
 
     .ad-status-box {
       background: #0f172a;
-      padding: 12px;
+      padding: 10px;
       border-radius: 8px;
       font-size: 13px;
-      margin: 12px 0;
+      margin: 10px 0 14px 0;
       border: 1px solid var(--border-color);
       color: var(--text-muted);
     }
@@ -296,12 +301,78 @@
 
     .btn-ad1 { background: var(--accent-yellow); color: #000; }
     .btn-ad2 { background: var(--accent-orange); color: #fff; }
-    .btn-dl { background: var(--accent-green); color: #fff; }
 
     .action-btn:disabled {
       background: #475569 !important;
       color: #cbd5e1 !important;
       cursor: not-allowed;
+    }
+
+    /* ৪টি কোয়ালিটি বাটন */
+    .quality-options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .quality-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 11px 14px;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      color: #ffffff;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .quality-btn:active {
+      transform: scale(0.98);
+    }
+
+    .quality-btn.has-link {
+      border-color: #0284c7;
+      background: #132238;
+    }
+
+    .quality-btn.disabled-btn {
+      opacity: 0.5;
+      cursor: not-allowed;
+      border-color: rgba(239, 68, 68, 0.3);
+      background: #111827;
+    }
+
+    /* নীল ও লাল বাতি (Lights) */
+    .indicator-light {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .light-blue {
+      background-color: #38bdf8;
+      box-shadow: 0 0 8px 2px rgba(56, 189, 248, 0.8);
+      animation: pulse-blue 1.8s infinite;
+    }
+
+    .light-red {
+      background-color: #ef4444;
+      box-shadow: 0 0 6px 1px rgba(239, 68, 68, 0.7);
+    }
+
+    @keyframes pulse-blue {
+      0% { box-shadow: 0 0 4px 1px rgba(56, 189, 248, 0.6); }
+      50% { box-shadow: 0 0 10px 3px rgba(56, 189, 248, 0.9); }
+      100% { box-shadow: 0 0 4px 1px rgba(56, 189, 248, 0.6); }
     }
 
     .close-btn {
@@ -347,7 +418,7 @@
     <div id="container-ae890ff8c15af92741885bc6b17aa434"></div>
   </div>
 
-  <!-- অ্যাপে ঢোকার ব্যানার অ্যাড -->
+  <!-- স্পন্সর ব্যানার অ্যাড -->
   <div class="entry-ad-banner" onclick="openEntryAd()">
     <p><span>SPONSOR</span> স্পন্সরড অফার দেখতে এখানে ক্লিক করুন 🎁</p>
   </div>
@@ -362,7 +433,7 @@
     <div class="loader-box">গুগল শিট থেকে মুভি লোড হচ্ছে... ⏳</div>
   </div>
 
-  <!-- অ্যাড ও ডাউনলোড পপআপ মডাল -->
+  <!-- মডাল -->
   <div class="modal-overlay" id="downloadModal" onclick="checkOverlayClick(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
       <h3 id="modalTitle">মুভির নাম</h3>
@@ -372,13 +443,15 @@
         👉 ধাপ ১: ১ম অ্যাড চালু করুন (১০ সে.)
       </button>
 
+      <!-- ডায়নামিক কোয়ালিটি বাটন -->
+      <div class="quality-options-list" id="qualityContainer" style="display: none;"></div>
+
       <br>
       <button class="close-btn" onclick="closeModal()">বন্ধ করুন</button>
     </div>
   </div>
 
   <script>
-    // আপনার নতুন Google Sheet ID
     const GOOGLE_SHEET_ID = "1RtUsHpLyk3NoxLCPSb8u4iqBqwMqtfUmWYMkD8tPWeU";
 
     const tg = window.Telegram?.WebApp;
@@ -392,7 +465,26 @@
     const ENTRY_AD_URL = "https://auctionr.org/4/65f43ffc33fe79a1323bfe7402ae52f3";
     const DEFAULT_AD2 = "https://asiafilm.org/4/13ea836dfdd1e0cc3f590b100bff3fb6";
 
+    // গুগল ড্রাইভ ও সাধারণ ছবির লিংক অটো-ফিক্সার
+    function formatImageUrl(rawUrl) {
+      if (!rawUrl || typeof rawUrl !== 'string') return '';
+      rawUrl = rawUrl.trim();
+
+      if (rawUrl.includes('drive.google.com')) {
+        let fileId = '';
+        const match1 = rawUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        const match2 = rawUrl.match(/id=([a-zA-Z0-9_-]+)/);
+        
+        if (match1 && match1[1]) fileId = match1[1];
+        else if (match2 && match2[1]) fileId = match2[1];
+
+        if (fileId) return `https://lh3.googleusercontent.com/d/${fileId}`;
+      }
+      return rawUrl;
+    }
+
     function openSafeUrl(url) {
+      if (!url || url === '#' || !url.startsWith('http')) return;
       if (tg && tg.openLink) {
         tg.openLink(url);
       } else {
@@ -410,7 +502,7 @@
     let timerInterval = null;
     let activeCategory = 'All';
 
-    // গুগল শিট থেকে ডাটা আনা
+    // গুগল শিট থেকে ডাটা আনা (ডায়নামিক বাটন নাম ও লিংক সহ)
     function fetchMoviesFromSheet() {
       const url = "https://docs.google.com/spreadsheets/d/" + GOOGLE_SHEET_ID + "/gviz/tq?tqx=out:json";
 
@@ -427,18 +519,35 @@
             if (!c || !c[0] || !c[0].v) continue;
 
             const titleStr = String(c[0].v).trim();
-            // প্রথম লাইনের 'title' বাদ দেওয়া
             if (titleStr.toLowerCase() === 'title') continue;
 
+            const rawImg = (c[3] && c[3].v) ? String(c[3].v).trim() : '';
+
+            // বাটনের নাম ও লিংক শিট থেকে নেওয়া
             movies.push({
               id: i + 1,
               title: titleStr,
               category: (c[1] && c[1].v) ? String(c[1].v).trim() : 'All',
               rating: (c[2] && c[2].v) ? String(c[2].v).trim() : '⭐ 8.0/10',
-              image: (c[3] && c[3].v) ? String(c[3].v).trim() : '',
+              image: formatImageUrl(rawImg),
               ad1: (c[4] && c[4].v) ? String(c[4].v).trim() : ENTRY_AD_URL,
               ad2: (c[5] && c[5].v && String(c[5].v).startsWith('http')) ? String(c[5].v).trim() : DEFAULT_AD2,
-              downloadUrl: (c[6] && c[6].v) ? String(c[6].v).trim() : ((c[5] && c[5].v) ? String(c[5].v).trim() : '#')
+
+              // Option 1: কলাম G (নাম), কলাম H (লিংক)
+              name1: (c[6] && c[6].v) ? String(c[6].v).trim() : "Download [480p • 477 MB]",
+              link1: (c[7] && c[7].v) ? String(c[7].v).trim() : '',
+
+              // Option 2: কলাম I (নাম), কলাম J (লিংক)
+              name2: (c[8] && c[8].v) ? String(c[8].v).trim() : "Download [720p • 1.0 GB]",
+              link2: (c[9] && c[9].v) ? String(c[9].v).trim() : '',
+
+              // Option 3: কলাম K (নাম), কলাম L (লিংক)
+              name3: (c[10] && c[10].v) ? String(c[10].v).trim() : "Download [1080p • 2.2 GB]",
+              link3: (c[11] && c[11].v) ? String(c[11].v).trim() : '',
+
+              // Option 4: কলাম M (নাম), কলাম N (লিংক)
+              name4: (c[12] && c[12].v) ? String(c[12].v).trim() : "Download [Best Quality 🔥 • 4.3 GB]",
+              link4: (c[13] && c[13].v) ? String(c[13].v).trim() : ''
             });
           }
           renderMovies(movies);
@@ -450,14 +559,12 @@
         });
     }
 
-    // মেনু টগল
     function toggleMenu(event) {
       if (event) event.stopPropagation();
       const menu = document.getElementById('dropdownMenu');
       menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
     }
 
-    // ক্যাটাগরি বাছাই
     function selectCategory(cat, event) {
       if (event) event.stopPropagation();
       activeCategory = cat;
@@ -479,7 +586,6 @@
       if (menu) menu.style.display = 'none';
     });
 
-    // মুভি কার্ড লোড করা
     function renderMovies(list) {
       const container = document.getElementById('moviesList');
       container.innerHTML = '';
@@ -494,7 +600,7 @@
         card.className = 'movie-card';
         card.innerHTML = `
           <div class="movie-poster-wrap">
-            <img src="${m.image}" alt="${m.title}" onerror="this.onerror=null;this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 140%22><rect width=%22100%22 height=%22140%22 fill=%22%231e293b%22/><text x=%2250%%22 y=%2250%%22 fill=%22%2364748b%22 font-size=%2212%22 text-anchor=%22middle%22 dy=%22.3em%22>No Image</text></svg>'">
+            <img src="${m.image}" alt="${m.title}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 140%22><rect width=%22100%22 height=%22140%22 fill=%22%231e293b%22/><text x=%2250%%22 y=%2250%%22 fill=%22%2364748b%22 font-size=%2212%22 text-anchor=%22middle%22 dy=%22.3em%22>No Poster</text></svg>'">
           </div>
           <div class="movie-info">
             <div>
@@ -511,7 +617,6 @@
       });
     }
 
-    // মুভি ফিল্টার/সার্চ
     function filterMovies() {
       const q = document.getElementById('searchInput').value.toLowerCase().trim();
       const filtered = movies.filter(m => {
@@ -522,7 +627,6 @@
       renderMovies(filtered);
     }
 
-    // পপআপ ওপেন
     function openModal(id) {
       currentMovie = movies.find(m => m.id === id);
       if (!currentMovie) return;
@@ -534,16 +638,17 @@
       document.getElementById('modalStatus').innerHTML = "ডাউনলোড আনলক করতে <b>১ম বিজ্ঞাপনটি</b> দেখুন।";
       
       const btn = document.getElementById('mainActionBtn');
+      btn.style.display = 'block';
       btn.className = "action-btn btn-ad1";
       btn.innerText = "👉 ধাপ ১: ১ম অ্যাড চালু করুন (১০ সে.)";
       btn.disabled = false;
       btn.onclick = handleAdClick;
 
+      document.getElementById('qualityContainer').style.display = 'none';
       document.getElementById('downloadModal').style.display = 'flex';
       if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
     }
 
-    // বিজ্ঞাপনে ক্লিক এবং কাউন্টডাউন
     function handleAdClick() {
       const btn = document.getElementById('mainActionBtn');
       const status = document.getElementById('modalStatus');
@@ -570,21 +675,54 @@
             btn.innerText = "👉 ধাপ ২: শেষ অ্যাড চালু করুন (১০ সে.)";
             btn.disabled = false;
           } else {
-            status.innerHTML = "<b style='color:#4ade80;'>🎉 ২টি বিজ্ঞাপন সফলভাবে শেষ হয়েছে!</b>";
-            btn.className = "action-btn btn-dl";
-            btn.innerText = "📥 আসল মুভি ডাউনলোড করুন 🎬";
-            btn.disabled = false;
-            btn.onclick = downloadFinalMovie;
+            status.innerHTML = "<b style='color:#4ade80;'>🎉 বিজ্ঞাপন শেষ! নিচের কোয়ালিটি বেছে নিন:</b>";
+            btn.style.display = 'none';
+            showQualityOptions();
             if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
           }
         }
       }, 1000);
     }
 
-    // ফাইনাল মুভি ডাউনলোড
-    function downloadFinalMovie() {
-      openSafeUrl(currentMovie.downloadUrl);
-      closeModal();
+    // শিট থেকে আসা ডাইনামিক নাম ও লিংক দিয়ে বাটন তৈরি
+    function showQualityOptions() {
+      const container = document.getElementById('qualityContainer');
+      container.innerHTML = '';
+
+      const qualities = [
+        { name: currentMovie.name1, link: currentMovie.link1 },
+        { name: currentMovie.name2, link: currentMovie.link2 },
+        { name: currentMovie.name3, link: currentMovie.link3 },
+        { name: currentMovie.name4, link: currentMovie.link4 }
+      ];
+
+      qualities.forEach(q => {
+        const hasValidLink = q.link && q.link.trim().startsWith('http');
+        const qBtn = document.createElement('div');
+        qBtn.className = `quality-btn ${hasValidLink ? 'has-link' : 'disabled-btn'}`;
+
+        const lightClass = hasValidLink ? 'light-blue' : 'light-red';
+
+        qBtn.innerHTML = `
+          <span>${q.name}</span>
+          <span class="indicator-light ${lightClass}" title="${hasValidLink ? 'Available' : 'Unavailable'}"></span>
+        `;
+
+        if (hasValidLink) {
+          qBtn.onclick = () => {
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            openSafeUrl(q.link);
+          };
+        } else {
+          qBtn.onclick = () => {
+            alert('দুঃখিত! এই কোয়ালিটির লিংক এখনও যুক্ত করা হয়নি।');
+          };
+        }
+
+        container.appendChild(qBtn);
+      });
+
+      container.style.display = 'flex';
     }
 
     function checkOverlayClick(e) {
@@ -596,7 +734,745 @@
       document.getElementById('downloadModal').style.display = 'none';
     }
 
-    // গুগল শিট থেকে লোড শুরু
+    fetchMoviesFromSheet();
+  </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Movie Box - Telegram Mini App</title>
+  
+  <!-- Telegram Web App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  
+  <!-- Social Bar Ad -->
+  <script data-cfasync="false" src="https://bancadeltempoidea.org/14/6ec3380071a63409857caac0c1180d7e"></script>
+
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+      --accent-yellow: #facc15;
+      --accent-green: #22c55e;
+      --accent-orange: #f97316;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      padding: 12px;
+      padding-bottom: 70px;
+      min-height: 100vh;
+    }
+
+    /* হেডার ও ৩-ডট মেনু */
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 5px 0 12px 0;
+      position: relative;
+    }
+
+    .header-bar h1 {
+      font-size: 22px;
+      color: var(--primary);
+      font-weight: 800;
+      text-align: center;
+      width: 100%;
+    }
+
+    .menu-btn {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      color: var(--primary);
+      font-size: 20px;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 20;
+    }
+
+    /* ৩-ডট ড্রপডাউন */
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 45px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+      z-index: 1000;
+      width: 160px;
+      overflow: hidden;
+    }
+
+    .dropdown-menu div {
+      padding: 12px 14px;
+      font-size: 13px;
+      color: #f1f5f9;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .dropdown-menu div:active {
+      background: var(--primary-hover);
+    }
+
+    /* ক্যাটাগরি চিপস */
+    .category-pills {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      scrollbar-width: none;
+    }
+    .category-pills::-webkit-scrollbar { display: none; }
+
+    .pill {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .pill.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #0b0f19;
+      font-weight: 700;
+    }
+
+    /* স্পন্সর ব্যানার */
+    .entry-ad-banner {
+      background: linear-gradient(135deg, #1e3a8a, #0284c7);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      margin-bottom: 15px;
+      border: 1px dashed var(--primary);
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .entry-ad-banner p { font-size: 13px; color: #f8fafc; font-weight: bold; }
+    .entry-ad-banner span {
+      font-size: 11px;
+      background: var(--accent-yellow);
+      color: #000;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 800;
+      margin-right: 5px;
+    }
+
+    /* সার্চ বক্স */
+    .search-box {
+      margin-bottom: 15px;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 12px 15px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+
+    /* মুভি গ্রিড */
+    .movies-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .movie-card {
+      background: var(--card-bg);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .movie-poster-wrap {
+      width: 100%;
+      height: 220px;
+      background: #0f172a;
+      position: relative;
+    }
+
+    .movie-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .movie-info {
+      padding: 10px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .movie-title {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .movie-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--accent-yellow);
+      margin-bottom: 10px;
+    }
+
+    .dl-trigger-btn {
+      background: var(--primary-hover);
+      color: #fff;
+      border: none;
+      padding: 9px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .loader-box {
+      grid-column: span 2;
+      text-align: center;
+      padding: 40px 10px;
+      color: var(--primary);
+      font-size: 14px;
+    }
+
+    /* মডাল ডিজাইন */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      width: 100%;
+      max-width: 340px;
+      border: 1px solid #475569;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-content h3 {
+      font-size: 17px;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .ad-status-box {
+      background: #0f172a;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin: 10px 0 14px 0;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+    }
+
+    .action-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      transition: 0.2s;
+    }
+
+    .btn-ad1 { background: var(--accent-yellow); color: #000; }
+    .btn-ad2 { background: var(--accent-orange); color: #fff; }
+
+    .action-btn:disabled {
+      background: #475569 !important;
+      color: #cbd5e1 !important;
+      cursor: not-allowed;
+    }
+
+    /* ৪টি কোয়ালিটি বাটন */
+    .quality-options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .quality-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 11px 14px;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      color: #ffffff;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .quality-btn:active {
+      transform: scale(0.98);
+    }
+
+    .quality-btn.has-link {
+      border-color: #0284c7;
+      background: #132238;
+    }
+
+    .quality-btn.disabled-btn {
+      opacity: 0.5;
+      cursor: not-allowed;
+      border-color: rgba(239, 68, 68, 0.3);
+      background: #111827;
+    }
+
+    /* নীল ও লাল বাতি (Lights) */
+    .indicator-light {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .light-blue {
+      background-color: #38bdf8;
+      box-shadow: 0 0 8px 2px rgba(56, 189, 248, 0.8);
+      animation: pulse-blue 1.8s infinite;
+    }
+
+    .light-red {
+      background-color: #ef4444;
+      box-shadow: 0 0 6px 1px rgba(239, 68, 68, 0.7);
+    }
+
+    @keyframes pulse-blue {
+      0% { box-shadow: 0 0 4px 1px rgba(56, 189, 248, 0.6); }
+      50% { box-shadow: 0 0 10px 3px rgba(56, 189, 248, 0.9); }
+      100% { box-shadow: 0 0 4px 1px rgba(56, 189, 248, 0.6); }
+    }
+
+    .close-btn {
+      margin-top: 15px;
+      background: transparent;
+      border: 1px solid #64748b;
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- হেডার ও ৩-ডট মেনু -->
+  <div class="header-bar">
+    <h1>🎬 Movielink bd.com</h1>
+    <button class="menu-btn" onclick="toggleMenu(event)">⋮</button>
+    
+    <div class="dropdown-menu" id="dropdownMenu">
+      <div onclick="selectCategory('All', event)">🌐 All (সকল)</div>
+      <div onclick="selectCategory('Bangla', event)">🇧🇩 Bangla</div>
+      <div onclick="selectCategory('Hindi', event)">🇮🇳 Hindi</div>
+      <div onclick="selectCategory('Bollywood', event)">⚡ Bollywood</div>
+      <div onclick="selectCategory('Hollywood', event)">🎬 Hollywood</div>
+    </div>
+  </div>
+
+  <!-- দ্রুত ক্যাটাগরি চিপস -->
+  <div class="category-pills">
+    <div class="pill active" onclick="selectCategory('All', event)">All</div>
+    <div class="pill" onclick="selectCategory('Bangla', event)">Bangla</div>
+    <div class="pill" onclick="selectCategory('Hindi', event)">Hindi</div>
+    <div class="pill" onclick="selectCategory('Bollywood', event)">Bollywood</div>
+    <div class="pill" onclick="selectCategory('Hollywood', event)">Hollywood</div>
+  </div>
+
+  <!-- Native Banner Ad -->
+  <div style="margin-bottom: 15px; width: 100%; overflow: hidden; display: flex; justify-content: center; border-radius: 8px;">
+    <script async="async" data-cfasync="false" src="https://bancadeltempoidea.org/21/ae890ff8c15af92741885bc6b17aa434"></script>
+    <div id="container-ae890ff8c15af92741885bc6b17aa434"></div>
+  </div>
+
+  <!-- স্পন্সর ব্যানার অ্যাড -->
+  <div class="entry-ad-banner" onclick="openEntryAd()">
+    <p><span>SPONSOR</span> স্পন্সরড অফার দেখতে এখানে ক্লিক করুন 🎁</p>
+  </div>
+
+  <!-- সার্চ বক্স -->
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="মুভির নাম খুঁজুন..." onkeyup="filterMovies()">
+  </div>
+
+  <!-- মুভির তালিকা -->
+  <div class="movies-grid" id="moviesList">
+    <div class="loader-box">গুগল শিট থেকে মুভি লোড হচ্ছে... ⏳</div>
+  </div>
+
+  <!-- মডাল -->
+  <div class="modal-overlay" id="downloadModal" onclick="checkOverlayClick(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <h3 id="modalTitle">মুভির নাম</h3>
+      <div class="ad-status-box" id="modalStatus">ডাউনলোড করতে ১ম অ্যাডটি দেখুন।</div>
+
+      <button class="action-btn btn-ad1" id="mainActionBtn" onclick="handleAdClick()">
+        👉 ধাপ ১: ১ম অ্যাড চালু করুন (১০ সে.)
+      </button>
+
+      <!-- ডায়নামিক কোয়ালিটি বাটন -->
+      <div class="quality-options-list" id="qualityContainer" style="display: none;"></div>
+
+      <br>
+      <button class="close-btn" onclick="closeModal()">বন্ধ করুন</button>
+    </div>
+  </div>
+
+  <script>
+    const GOOGLE_SHEET_ID = "1RtUsHpLyk3NoxLCPSb8u4iqBqwMqtfUmWYMkD8tPWeU";
+
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      try {
+        tg.ready();
+        tg.expand();
+      } catch (e) {}
+    }
+
+    const ENTRY_AD_URL = "https://auctionr.org/4/65f43ffc33fe79a1323bfe7402ae52f3";
+    const DEFAULT_AD2 = "https://asiafilm.org/4/13ea836dfdd1e0cc3f590b100bff3fb6";
+
+    // গুগল ড্রাইভ ও সাধারণ ছবির লিংক অটো-ফিক্সার
+    function formatImageUrl(rawUrl) {
+      if (!rawUrl || typeof rawUrl !== 'string') return '';
+      rawUrl = rawUrl.trim();
+
+      if (rawUrl.includes('drive.google.com')) {
+        let fileId = '';
+        const match1 = rawUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        const match2 = rawUrl.match(/id=([a-zA-Z0-9_-]+)/);
+        
+        if (match1 && match1[1]) fileId = match1[1];
+        else if (match2 && match2[1]) fileId = match2[1];
+
+        if (fileId) return `https://lh3.googleusercontent.com/d/${fileId}`;
+      }
+      return rawUrl;
+    }
+
+    function openSafeUrl(url) {
+      if (!url || url === '#' || !url.startsWith('http')) return;
+      if (tg && tg.openLink) {
+        tg.openLink(url);
+      } else {
+        window.open(url, '_blank');
+      }
+    }
+
+    function openEntryAd() {
+      openSafeUrl(ENTRY_AD_URL);
+    }
+
+    let movies = [];
+    let currentMovie = null;
+    let adStep = 1;
+    let timerInterval = null;
+    let activeCategory = 'All';
+
+    // গুগল শিট থেকে ডাটা আনা (ডায়নামিক বাটন নাম ও লিংক সহ)
+    function fetchMoviesFromSheet() {
+      const url = "https://docs.google.com/spreadsheets/d/" + GOOGLE_SHEET_ID + "/gviz/tq?tqx=out:json";
+
+      fetch(url)
+        .then(res => res.text())
+        .then(data => {
+          const jsonString = data.substring(47).slice(0, -2);
+          const json = JSON.parse(jsonString);
+          const rows = json.table.rows;
+
+          movies = [];
+          for (let i = 0; i < rows.length; i++) {
+            const c = rows[i].c;
+            if (!c || !c[0] || !c[0].v) continue;
+
+            const titleStr = String(c[0].v).trim();
+            if (titleStr.toLowerCase() === 'title') continue;
+
+            const rawImg = (c[3] && c[3].v) ? String(c[3].v).trim() : '';
+
+            // বাটনের নাম ও লিংক শিট থেকে নেওয়া
+            movies.push({
+              id: i + 1,
+              title: titleStr,
+              category: (c[1] && c[1].v) ? String(c[1].v).trim() : 'All',
+              rating: (c[2] && c[2].v) ? String(c[2].v).trim() : '⭐ 8.0/10',
+              image: formatImageUrl(rawImg),
+              ad1: (c[4] && c[4].v) ? String(c[4].v).trim() : ENTRY_AD_URL,
+              ad2: (c[5] && c[5].v && String(c[5].v).startsWith('http')) ? String(c[5].v).trim() : DEFAULT_AD2,
+
+              // Option 1: কলাম G (নাম), কলাম H (লিংক)
+              name1: (c[6] && c[6].v) ? String(c[6].v).trim() : "Download [480p • 477 MB]",
+              link1: (c[7] && c[7].v) ? String(c[7].v).trim() : '',
+
+              // Option 2: কলাম I (নাম), কলাম J (লিংক)
+              name2: (c[8] && c[8].v) ? String(c[8].v).trim() : "Download [720p • 1.0 GB]",
+              link2: (c[9] && c[9].v) ? String(c[9].v).trim() : '',
+
+              // Option 3: কলাম K (নাম), কলাম L (লিংক)
+              name3: (c[10] && c[10].v) ? String(c[10].v).trim() : "Download [1080p • 2.2 GB]",
+              link3: (c[11] && c[11].v) ? String(c[11].v).trim() : '',
+
+              // Option 4: কলাম M (নাম), কলাম N (লিংক)
+              name4: (c[12] && c[12].v) ? String(c[12].v).trim() : "Download [Best Quality 🔥 • 4.3 GB]",
+              link4: (c[13] && c[13].v) ? String(c[13].v).trim() : ''
+            });
+          }
+          renderMovies(movies);
+        })
+        .catch(err => {
+          console.error(err);
+          document.getElementById('moviesList').innerHTML = 
+            '<p style="grid-column: span 2; text-align: center; color: #ef4444; padding: 30px;">মুভি লোড হতে সমস্যা হয়েছে! শিটের পারমিশন Public আছে কিনা দেখে নিন।</p>';
+        });
+    }
+
+    function toggleMenu(event) {
+      if (event) event.stopPropagation();
+      const menu = document.getElementById('dropdownMenu');
+      menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    }
+
+    function selectCategory(cat, event) {
+      if (event) event.stopPropagation();
+      activeCategory = cat;
+      document.getElementById('dropdownMenu').style.display = 'none';
+
+      const pills = document.querySelectorAll('.pill');
+      pills.forEach(pill => {
+        if (pill.innerText.trim().toLowerCase() === cat.toLowerCase()) {
+          pill.classList.add('active');
+        } else {
+          pill.classList.remove('active');
+        }
+      });
+      filterMovies();
+    }
+
+    document.addEventListener('click', () => {
+      const menu = document.getElementById('dropdownMenu');
+      if (menu) menu.style.display = 'none';
+    });
+
+    function renderMovies(list) {
+      const container = document.getElementById('moviesList');
+      container.innerHTML = '';
+
+      if (!list || list.length === 0) {
+        container.innerHTML = '<p style="grid-column: span 2; text-align: center; color: #94a3b8; padding: 40px;">কোনো ভিডিও পাওয়া যায়নি!</p>';
+        return;
+      }
+
+      list.forEach(m => {
+        const card = document.createElement('div');
+        card.className = 'movie-card';
+        card.innerHTML = `
+          <div class="movie-poster-wrap">
+            <img src="${m.image}" alt="${m.title}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 140%22><rect width=%22100%22 height=%22140%22 fill=%22%231e293b%22/><text x=%2250%%22 y=%2250%%22 fill=%22%2364748b%22 font-size=%2212%22 text-anchor=%22middle%22 dy=%22.3em%22>No Poster</text></svg>'">
+          </div>
+          <div class="movie-info">
+            <div>
+              <div class="movie-title">${m.title}</div>
+              <div class="movie-meta">
+                <span>${m.rating}</span>
+                <span>${m.category}</span>
+              </div>
+            </div>
+            <button class="dl-trigger-btn" onclick="openModal(${m.id})">ডাউনলোড</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function filterMovies() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      const filtered = movies.filter(m => {
+        const matchesCategory = (activeCategory === 'All') || (m.category.toLowerCase() === activeCategory.toLowerCase());
+        const matchesSearch = m.title.toLowerCase().includes(q);
+        return matchesCategory && matchesSearch;
+      });
+      renderMovies(filtered);
+    }
+
+    function openModal(id) {
+      currentMovie = movies.find(m => m.id === id);
+      if (!currentMovie) return;
+
+      adStep = 1;
+      clearInterval(timerInterval);
+
+      document.getElementById('modalTitle').innerText = currentMovie.title;
+      document.getElementById('modalStatus').innerHTML = "ডাউনলোড আনলক করতে <b>১ম বিজ্ঞাপনটি</b> দেখুন।";
+      
+      const btn = document.getElementById('mainActionBtn');
+      btn.style.display = 'block';
+      btn.className = "action-btn btn-ad1";
+      btn.innerText = "👉 ধাপ ১: ১ম অ্যাড চালু করুন (১০ সে.)";
+      btn.disabled = false;
+      btn.onclick = handleAdClick;
+
+      document.getElementById('qualityContainer').style.display = 'none';
+      document.getElementById('downloadModal').style.display = 'flex';
+      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    }
+
+    function handleAdClick() {
+      const btn = document.getElementById('mainActionBtn');
+      const status = document.getElementById('modalStatus');
+      btn.disabled = true;
+
+      const targetAd = (adStep === 1) ? currentMovie.ad1 : currentMovie.ad2;
+      openSafeUrl(targetAd);
+
+      let count = 10;
+      status.innerHTML = `<span style="color:#38bdf8;">বিজ্ঞাপন লোড হচ্ছে... অনুগ্রহ করে ১০ সেকেন্ড অপেক্ষা করুন।</span>`;
+      btn.innerText = `⏳ অপেক্ষা করুন (${count}s)...`;
+
+      timerInterval = setInterval(() => {
+        count--;
+        btn.innerText = `⏳ অপেক্ষা করুন (${count}s)...`;
+
+        if (count <= 0) {
+          clearInterval(timerInterval);
+
+          if (adStep === 1) {
+            adStep = 2;
+            status.innerHTML = "✅ ১ম অ্যাড দেখা শেষ! এবার <b>২য় অ্যাডটি</b> দেখুন।";
+            btn.className = "action-btn btn-ad2";
+            btn.innerText = "👉 ধাপ ২: শেষ অ্যাড চালু করুন (১০ সে.)";
+            btn.disabled = false;
+          } else {
+            status.innerHTML = "<b style='color:#4ade80;'>🎉 বিজ্ঞাপন শেষ! নিচের কোয়ালিটি বেছে নিন:</b>";
+            btn.style.display = 'none';
+            showQualityOptions();
+            if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+          }
+        }
+      }, 1000);
+    }
+
+    // শিট থেকে আসা ডাইনামিক নাম ও লিংক দিয়ে বাটন তৈরি
+    function showQualityOptions() {
+      const container = document.getElementById('qualityContainer');
+      container.innerHTML = '';
+
+      const qualities = [
+        { name: currentMovie.name1, link: currentMovie.link1 },
+        { name: currentMovie.name2, link: currentMovie.link2 },
+        { name: currentMovie.name3, link: currentMovie.link3 },
+        { name: currentMovie.name4, link: currentMovie.link4 }
+      ];
+
+      qualities.forEach(q => {
+        const hasValidLink = q.link && q.link.trim().startsWith('http');
+        const qBtn = document.createElement('div');
+        qBtn.className = `quality-btn ${hasValidLink ? 'has-link' : 'disabled-btn'}`;
+
+        const lightClass = hasValidLink ? 'light-blue' : 'light-red';
+
+        qBtn.innerHTML = `
+          <span>${q.name}</span>
+          <span class="indicator-light ${lightClass}" title="${hasValidLink ? 'Available' : 'Unavailable'}"></span>
+        `;
+
+        if (hasValidLink) {
+          qBtn.onclick = () => {
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            openSafeUrl(q.link);
+          };
+        } else {
+          qBtn.onclick = () => {
+            alert('দুঃখিত! এই কোয়ালিটির লিংক এখনও যুক্ত করা হয়নি।');
+          };
+        }
+
+        container.appendChild(qBtn);
+      });
+
+      container.style.display = 'flex';
+    }
+
+    function checkOverlayClick(e) {
+      if (e.target.id === 'downloadModal') closeModal();
+    }
+
+    function closeModal() {
+      clearInterval(timerInterval);
+      document.getElementById('downloadModal').style.display = 'none';
+    }
+
     fetchMoviesFromSheet();
   </script>
 </body>
