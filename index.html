@@ -185,12 +185,34 @@
       display: flex;
       flex-direction: column;
       cursor: pointer;
+      position: relative;
       transition: transform 0.2s ease, border-color 0.2s ease;
     }
 
     .movie-card:active {
       transform: scale(0.98);
       border-color: var(--primary);
+    }
+
+    /* পিন করা কার্ডের বিশেষ স্টাইল */
+    .movie-card.is-pinned {
+      border: 1px solid #f59e0b;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+    }
+
+    .pin-badge {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: #f59e0b;
+      color: #000000;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 3px 6px;
+      border-radius: 4px;
+      z-index: 5;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.8);
+      letter-spacing: 0.5px;
     }
 
     .movie-poster-wrap {
@@ -208,7 +230,7 @@
       display: block;
     }
 
-    /* ছবির মতো লাল কোয়ালিটি ব্যাজ */
+    /* কোয়ালিটি ব্যাজ */
     .quality-badge {
       position: absolute;
       top: 6px;
@@ -536,276 +558,3 @@
         window.open(url, '_blank');
       }
     }
-
-    function openEntryAd() {
-      openSafeUrl(ENTRY_AD_URL);
-    }
-
-    let movies = [];
-    let currentMovie = null;
-    let adStep = 1;
-    let timerInterval = null;
-    let activeCategory = 'All';
-
-    function parseQualityData(cellValue, defaultLabel) {
-      if (!cellValue) return { link: '', label: defaultLabel };
-      const str = String(cellValue).trim();
-      
-      if (str.includes('|')) {
-        const parts = str.split('|');
-        return {
-          link: parts[0].trim(),
-          label: `Download [${parts[1].trim()}]`
-        };
-      }
-      return {
-        link: str,
-        label: defaultLabel
-      };
-    }
-
-    function fetchMoviesFromSheet() {
-      // &headers=1 যোগ করা হয়েছে যাতে গুগল কোন ডেটাকে ভুল করে হেডার মনে না করে
-      const url = "https://docs.google.com/spreadsheets/d/" + GOOGLE_SHEET_ID + "/gviz/tq?tqx=out:json&headers=1";
-
-      fetch(url)
-        .then(res => res.text())
-        .then(data => {
-          const jsonString = data.substring(47).slice(0, -2);
-          const json = JSON.parse(jsonString);
-          const rows = json.table.rows;
-
-          movies = [];
-          for (let i = 0; i < rows.length; i++) {
-            const c = rows[i].c;
-            if (!c || !c[0] || c[0].v === null || c[0].v === undefined) continue;
-
-            const titleStr = String(c[0].v).trim();
-            if (titleStr.toLowerCase() === 'title' || titleStr === '') continue;
-
-            const rawImg = (c[3] && c[3].v) ? String(c[3].v).trim() : '';
-
-            // ডায়নামিক নাম ও লিংক প্রসেসিং
-            const q480 = parseQualityData(c[6]?.v, "Download [480p • 477 MB]");
-            const q720 = parseQualityData(c[7]?.v, "Download [720p • 1.0 GB]");
-            const q1080 = parseQualityData(c[8]?.v, "Download [1080p • 2.2 GB]");
-            const qBest = parseQualityData(c[9]?.v, "Download [Best Quality 🔥 • 4.3 GB]");
-
-            const ratingVal = (c[2] && c[2].v) ? String(c[2].v).trim() : '⭐ 8.0';
-            const badgeTag = (c[10] && c[10].v) ? String(c[10].v).trim() : 'WEB-DL';
-            const releaseDate = (c[11] && c[11].v) ? String(c[11].v).trim() : '';
-
-            const genreVal = (c[12] && c[12].v) ? String(c[12].v).trim() : '';
-            const langVal = (c[13] && c[13].v) ? String(c[13].v).trim() : '';
-
-            movies.push({
-              id: i + 1,
-              title: titleStr,
-              category: (c[1] && c[1].v) ? String(c[1].v).trim() : 'All',
-              rating: ratingVal.startsWith('⭐') ? ratingVal : `⭐ ${ratingVal}`,
-              image: formatImageUrl(rawImg),
-              ad1: (c[4] && c[4].v) ? String(c[4].v).trim() : ENTRY_AD_URL,
-              ad2: (c[5] && c[5].v && String(c[5].v).startsWith('http')) ? String(c[5].v).trim() : DEFAULT_AD2,
-              badge: badgeTag,
-              date: releaseDate,
-              genre: genreVal,
-              language: langVal,
-              qualities: [q480, q720, q1080, qBest]
-            });
-          }
-          renderMovies(movies);
-        })
-        .catch(err => {
-          console.error(err);
-          document.getElementById('moviesList').innerHTML = 
-            '<p style="grid-column: span 2; text-align: center; color: #ef4444; padding: 30px;">মুভি লোড হতে সমস্যা হয়েছে!</p>';
-        });
-    }
-
-    function toggleMenu(event) {
-      if (event) event.stopPropagation();
-      const menu = document.getElementById('dropdownMenu');
-      menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
-    }
-
-    function selectCategory(cat, event) {
-      if (event) event.stopPropagation();
-      activeCategory = cat;
-      document.getElementById('dropdownMenu').style.display = 'none';
-
-      const pills = document.querySelectorAll('.pill');
-      pills.forEach(pill => {
-        if (pill.innerText.trim().toLowerCase() === cat.toLowerCase()) {
-          pill.classList.add('active');
-        } else {
-          pill.classList.remove('active');
-        }
-      });
-      filterMovies();
-    }
-
-    document.addEventListener('click', () => {
-      const menu = document.getElementById('dropdownMenu');
-      if (menu) menu.style.display = 'none';
-    });
-
-    function renderMovies(list) {
-      const container = document.getElementById('moviesList');
-      container.innerHTML = '';
-
-      if (!list || list.length === 0) {
-        container.innerHTML = '<p style="grid-column: span 2; text-align: center; color: #94a3b8; padding: 40px;">কোনো ভিডিও পাওয়া যায়নি!</p>';
-        return;
-      }
-
-      list.forEach(m => {
-        const card = document.createElement('div');
-        card.className = 'movie-card';
-        card.onclick = () => openModal(m.id);
-
-        card.innerHTML = `
-          <div class="movie-poster-wrap">
-            ${m.badge ? `<span class="quality-badge">${m.badge}</span>` : ''}
-            <img src="${m.image}" alt="${m.title}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 140%22><rect width=%22100%22 height=%22140%22 fill=%22%231e293b%22/><text x=%2250%%22 y=%2250%%22 fill=%22%2364748b%22 font-size=%2212%22 text-anchor=%22middle%22 dy=%22.3em%22>No Poster</text></svg>'">
-          </div>
-          <div class="movie-info">
-            <div class="movie-title" title="${m.title}">${m.title}</div>
-            
-            <div class="movie-meta">
-              <span class="movie-rating">${m.rating}</span>
-              <span class="movie-date">${m.date}</span>
-            </div>
-
-            ${m.genre ? `<div class="extra-tag-line"><span>Genre:</span> ${m.genre}</div>` : ''}
-            ${m.language ? `<div class="extra-tag-line"><span>Audio:</span> ${m.language}</div>` : ''}
-
-            <button class="dl-trigger-btn" onclick="event.stopPropagation(); openModal(${m.id})">ডাউনলোড</button>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    function filterMovies() {
-      const q = document.getElementById('searchInput').value.toLowerCase().trim();
-      const filtered = movies.filter(m => {
-        const matchesCategory = (activeCategory === 'All') || (m.category.toLowerCase() === activeCategory.toLowerCase());
-        const matchesSearch = m.title.toLowerCase().includes(q) || 
-                              m.genre.toLowerCase().includes(q) || 
-                              m.language.toLowerCase().includes(q);
-        return matchesCategory && matchesSearch;
-      });
-      renderMovies(filtered);
-    }
-
-    function openModal(id) {
-      currentMovie = movies.find(m => m.id === id);
-      if (!currentMovie) return;
-
-      adStep = 1;
-      clearInterval(timerInterval);
-
-      document.getElementById('modalTitle').innerText = currentMovie.title;
-
-      let subDetailsText = [];
-      if (currentMovie.rating) subDetailsText.push(currentMovie.rating);
-      if (currentMovie.date) subDetailsText.push(currentMovie.date);
-      if (currentMovie.genre) subDetailsText.push(`Genre: ${currentMovie.genre}`);
-      if (currentMovie.language) subDetailsText.push(`Audio: ${currentMovie.language}`);
-      document.getElementById('modalSubDetails').innerHTML = subDetailsText.join(' • ');
-
-      document.getElementById('modalStatus').innerHTML = "ডাউনলোড আনলক করতে <b>১ম বিজ্ঞাপনটি</b> দেখুন।";
-      
-      const btn = document.getElementById('mainActionBtn');
-      btn.style.display = 'block';
-      btn.className = "action-btn btn-ad1";
-      btn.innerText = "👉 ধাপ ১: ১ম অ্যাড চালু করুন (১০ সে.)";
-      btn.disabled = false;
-      btn.onclick = handleAdClick;
-
-      document.getElementById('qualityContainer').style.display = 'none';
-      document.getElementById('downloadModal').style.display = 'flex';
-      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-    }
-
-    function handleAdClick() {
-      const btn = document.getElementById('mainActionBtn');
-      const status = document.getElementById('modalStatus');
-      btn.disabled = true;
-
-      const targetAd = (adStep === 1) ? currentMovie.ad1 : currentMovie.ad2;
-      openSafeUrl(targetAd);
-
-      let count = 10;
-      status.innerHTML = `<span style="color:#38bdf8;">বিজ্ঞাপন লোড হচ্ছে... অনুগ্রহ করে ১০ সেকেন্ড অপেক্ষা করুন।</span>`;
-      btn.innerText = `⏳ অপেক্ষা করুন (${count}s)...`;
-
-      timerInterval = setInterval(() => {
-        count--;
-        btn.innerText = `⏳ অপেক্ষা করুন (${count}s)...`;
-
-        if (count <= 0) {
-          clearInterval(timerInterval);
-
-          if (adStep === 1) {
-            adStep = 2;
-            status.innerHTML = "✅ ১ম অ্যাড দেখা শেষ! এবার <b>২য় অ্যাডটি</b> দেখুন।";
-            btn.className = "action-btn btn-ad2";
-            btn.innerText = "👉 ধাপ ২: শেষ অ্যাড চালু করুন (১০ সে.)";
-            btn.disabled = false;
-          } else {
-            status.innerHTML = "<b style='color:#4ade80;'>🎉 বিজ্ঞাপন শেষ! নিচের কোয়ালিটি বেছে নিন:</b>";
-            btn.style.display = 'none';
-            showQualityOptions();
-            if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-          }
-        }
-      }, 1000);
-    }
-
-    function showQualityOptions() {
-      const container = document.getElementById('qualityContainer');
-      container.innerHTML = '';
-
-      currentMovie.qualities.forEach(q => {
-        const hasValidLink = q.link && q.link.trim().startsWith('http');
-        const qBtn = document.createElement('div');
-        qBtn.className = `quality-btn ${hasValidLink ? 'has-link' : 'disabled-btn'}`;
-
-        const lightClass = hasValidLink ? 'light-blue' : 'light-red';
-
-        qBtn.innerHTML = `
-          <span>${q.label}</span>
-          <span class="indicator-light ${lightClass}" title="${hasValidLink ? 'Available' : 'Unavailable'}"></span>
-        `;
-
-        if (hasValidLink) {
-          qBtn.onclick = () => {
-            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            openSafeUrl(q.link);
-          };
-        } else {
-          qBtn.onclick = () => {
-            alert('দুঃখিত! এই কোয়ালিটির লিংক এখনও যুক্ত করা হয়নি।');
-          };
-        }
-
-        container.appendChild(qBtn);
-      });
-
-      container.style.display = 'flex';
-    }
-
-    function checkOverlayClick(e) {
-      if (e.target.id === 'downloadModal') closeModal();
-    }
-
-    function closeModal() {
-      clearInterval(timerInterval);
-      document.getElementById('downloadModal').style.display = 'none';
-    }
-
-    fetchMoviesFromSheet();
-  </script>
-</body>
-</html>
