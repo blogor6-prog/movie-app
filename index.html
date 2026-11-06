@@ -13,7 +13,7 @@
 
   <style>
     :root {
-      --bg-dark: #0b0f19;
+      --bg-dark: #0f172a;
       --card-bg: #1e293b;
       --border-color: #334155;
       --primary: #38bdf8;
@@ -52,7 +52,7 @@
     }
 
     .header-bar h1 {
-      font-size: 22px;
+      font-size: 20px;
       color: var(--primary);
       font-weight: 800;
       text-align: center;
@@ -137,9 +137,9 @@
     .entry-ad-banner {
       background: linear-gradient(135deg, #1e3a8a, #0284c7);
       border-radius: 10px;
-      padding: 12px;
+      padding: 10px;
       text-align: center;
-      margin-bottom: 15px;
+      margin-bottom: 12px;
       border: 1px dashed var(--primary);
       cursor: pointer;
       box-shadow: 0 4px 10px rgba(0,0,0,0.3);
@@ -161,8 +161,8 @@
     }
     .search-box input {
       width: 100%;
-      padding: 12px 15px;
-      border-radius: 10px;
+      padding: 10px 14px;
+      border-radius: 8px;
       border: 1px solid var(--border-color);
       background: var(--card-bg);
       color: #fff;
@@ -170,27 +170,30 @@
       outline: none;
     }
 
-    /* মুভি গ্রিড */
+    /* মুভি গ্রিড (স্ক্রিনশটের মতো ২ কলাম) */
     .movies-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
+      gap: 14px;
     }
 
     .movie-card {
-      background: var(--card-bg);
-      border-radius: 10px;
+      background: transparent;
+      border-radius: 8px;
       overflow: hidden;
-      border: 1px solid var(--border-color);
       display: flex;
       flex-direction: column;
+      cursor: pointer;
     }
 
     .movie-poster-wrap {
       width: 100%;
-      height: 220px;
-      background: #0f172a;
+      height: 240px;
+      background: #1e293b;
       position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
 
     .movie-card img {
@@ -198,42 +201,50 @@
       height: 100%;
       object-fit: cover;
       display: block;
+      transition: transform 0.3s ease;
+    }
+
+    .movie-card:hover img {
+      transform: scale(1.04);
+    }
+
+    /* স্ক্রিনশটের মতো কোয়ালিটি ব্যাজ (WEB-DL, 4K ইত্যাদি) */
+    .quality-badge {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: #ef4444; /* লাল রঙের ব্যাজ */
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      letter-spacing: 0.5px;
+      z-index: 2;
     }
 
     .movie-info {
-      padding: 10px;
-      flex-grow: 1;
+      padding: 8px 2px 4px 2px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
     }
 
     .movie-title {
-      font-size: 14px;
-      font-weight: bold;
-      margin-bottom: 4px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 3px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .movie-meta {
-      display: flex;
-      justify-content: space-between;
+    /* রিলিজ তারিখের টেক্সট */
+    .movie-date {
       font-size: 11px;
-      color: var(--accent-yellow);
-      margin-bottom: 10px;
-    }
-
-    .dl-trigger-btn {
-      background: var(--primary-hover);
-      color: #fff;
-      border: none;
-      padding: 9px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: bold;
-      cursor: pointer;
+      color: #94a3b8;
     }
 
     .loader-box {
@@ -273,7 +284,7 @@
     }
 
     .modal-content h3 {
-      font-size: 17px;
+      font-size: 16px;
       color: var(--primary);
       margin-bottom: 8px;
     }
@@ -292,7 +303,7 @@
       width: 100%;
       padding: 12px;
       border-radius: 8px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: bold;
       cursor: pointer;
       border: none;
@@ -308,7 +319,6 @@
       cursor: not-allowed;
     }
 
-    /* ৪টি কোয়ালিটি বাটন */
     .quality-options-list {
       display: flex;
       flex-direction: column;
@@ -329,18 +339,12 @@
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
       text-decoration: none;
-    }
-
-    .quality-btn:active {
-      transform: scale(0.98);
     }
 
     .quality-btn.has-link {
       border-color: #0284c7;
       background: #132238;
-      box-shadow: 0 0 10px rgba(2, 132, 199, 0.2);
     }
 
     .quality-btn.disabled-btn {
@@ -350,7 +354,6 @@
       background: #111827;
     }
 
-    /* নীল ও লাল বাতি */
     .indicator-light {
       width: 12px;
       height: 12px;
@@ -492,18 +495,15 @@
     let timerInterval = null;
     let activeCategory = 'All';
 
-    // লিংক এবং কাস্টম সাইজ আলাদা করার ফাংশন
     function parseQualityData(cellValue, defaultLabel) {
       if (!cellValue) return { link: '', label: defaultLabel };
       const str = String(cellValue).trim();
       
       if (str.includes('|')) {
         const parts = str.split('|');
-        const link = parts[0].trim();
-        const customText = parts[1].trim();
         return {
-          link: link,
-          label: `Download [${customText}]`
+          link: parts[0].trim(),
+          label: `Download [${parts[1].trim()}]`
         };
       }
       return {
@@ -538,6 +538,10 @@
             const q1080 = parseQualityData(c[8]?.v, "Download [1080p • 2.2 GB]");
             const qBest = parseQualityData(c[9]?.v, "Download [Best Quality 🔥 • 4.3 GB]");
 
+            // নতুন: কলাম K (১১তম) থেকে কোয়ালিটি ট্যাগ এবং কলাম L (১২তম) থেকে তারিখ রিড করা
+            const badgeTag = (c[10] && c[10].v) ? String(c[10].v).trim() : 'WEB-DL';
+            const releaseDate = (c[11] && c[11].v) ? String(c[11].v).trim() : '';
+
             movies.push({
               id: i + 1,
               title: titleStr,
@@ -546,7 +550,8 @@
               image: formatImageUrl(rawImg),
               ad1: (c[4] && c[4].v) ? String(c[4].v).trim() : ENTRY_AD_URL,
               ad2: (c[5] && c[5].v && String(c[5].v).startsWith('http')) ? String(c[5].v).trim() : DEFAULT_AD2,
-              
+              badge: badgeTag,
+              date: releaseDate,
               qualities: [q480, q720, q1080, qBest]
             });
           }
@@ -555,7 +560,7 @@
         .catch(err => {
           console.error(err);
           document.getElementById('moviesList').innerHTML = 
-            '<p style="grid-column: span 2; text-align: center; color: #ef4444; padding: 30px;">মুভি লোড হতে সমস্যা হয়েছে! শিটের পারমিশন Public আছে কিনা দেখে নিন।</p>';
+            '<p style="grid-column: span 2; text-align: center; color: #ef4444; padding: 30px;">মুভি লোড হতে সমস্যা হয়েছে!</p>';
         });
     }
 
@@ -586,6 +591,7 @@
       if (menu) menu.style.display = 'none';
     });
 
+    // নতুন পোস্টার কার্ড রেন্ডার
     function renderMovies(list) {
       const container = document.getElementById('moviesList');
       container.innerHTML = '';
@@ -598,19 +604,16 @@
       list.forEach(m => {
         const card = document.createElement('div');
         card.className = 'movie-card';
+        card.onclick = () => openModal(m.id);
+
         card.innerHTML = `
           <div class="movie-poster-wrap">
+            ${m.badge ? `<span class="quality-badge">${m.badge}</span>` : ''}
             <img src="${m.image}" alt="${m.title}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 140%22><rect width=%22100%22 height=%22140%22 fill=%22%231e293b%22/><text x=%2250%%22 y=%2250%%22 fill=%22%2364748b%22 font-size=%2212%22 text-anchor=%22middle%22 dy=%22.3em%22>No Poster</text></svg>'">
           </div>
           <div class="movie-info">
-            <div>
-              <div class="movie-title">${m.title}</div>
-              <div class="movie-meta">
-                <span>${m.rating}</span>
-                <span>${m.category}</span>
-              </div>
-            </div>
-            <button class="dl-trigger-btn" onclick="openModal(${m.id})">ডাউনলোড</button>
+            <div class="movie-title" title="${m.title}">${m.title}</div>
+            <div class="movie-date">${m.date || m.category}</div>
           </div>
         `;
         container.appendChild(card);
