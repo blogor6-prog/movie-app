@@ -208,7 +208,7 @@
       display: block;
     }
 
-    /* লাল ব্যাজ */
+    /* ছবির মতো লাল কোয়ালিটি ব্যাজ */
     .quality-badge {
       position: absolute;
       top: 6px;
@@ -243,7 +243,6 @@
       text-overflow: ellipsis;
     }
 
-    /* রেটিং এবং রিলিজ তারিখ */
     .movie-meta {
       display: flex;
       justify-content: space-between;
@@ -262,7 +261,6 @@
       font-size: 11px;
     }
 
-    /* Genre ও Language স্টাইল */
     .extra-tag-line {
       font-size: 10.5px;
       color: #94a3b8;
@@ -368,6 +366,7 @@
       cursor: not-allowed;
     }
 
+    /* ৪টি কোয়ালিটি বাটন */
     .quality-options-list {
       display: flex;
       flex-direction: column;
@@ -404,6 +403,7 @@
       background: #111827;
     }
 
+    /* নীল ও লাল বাতি */
     .indicator-light {
       width: 12px;
       height: 12px;
@@ -565,7 +565,8 @@
     }
 
     function fetchMoviesFromSheet() {
-      const url = "https://docs.google.com/spreadsheets/d/" + GOOGLE_SHEET_ID + "/gviz/tq?tqx=out:json";
+      // &headers=1 যোগ করা হয়েছে যাতে গুগল কোন ডেটাকে ভুল করে হেডার মনে না করে
+      const url = "https://docs.google.com/spreadsheets/d/" + GOOGLE_SHEET_ID + "/gviz/tq?tqx=out:json&headers=1";
 
       fetch(url)
         .then(res => res.text())
@@ -577,13 +578,14 @@
           movies = [];
           for (let i = 0; i < rows.length; i++) {
             const c = rows[i].c;
-            if (!c || !c[0] || !c[0].v) continue;
+            if (!c || !c[0] || c[0].v === null || c[0].v === undefined) continue;
 
             const titleStr = String(c[0].v).trim();
             if (titleStr.toLowerCase() === 'title' || titleStr === '') continue;
 
             const rawImg = (c[3] && c[3].v) ? String(c[3].v).trim() : '';
 
+            // ডায়নামিক নাম ও লিংক প্রসেসিং
             const q480 = parseQualityData(c[6]?.v, "Download [480p • 477 MB]");
             const q720 = parseQualityData(c[7]?.v, "Download [720p • 1.0 GB]");
             const q1080 = parseQualityData(c[8]?.v, "Download [1080p • 2.2 GB]");
@@ -593,7 +595,6 @@
             const badgeTag = (c[10] && c[10].v) ? String(c[10].v).trim() : 'WEB-DL';
             const releaseDate = (c[11] && c[11].v) ? String(c[11].v).trim() : '';
 
-            // ১. Genre (কলাম ১৩) এবং ২. Language (কলাম ১৪) রিড করা
             const genreVal = (c[12] && c[12].v) ? String(c[12].v).trim() : '';
             const langVal = (c[13] && c[13].v) ? String(c[13].v).trim() : '';
 
@@ -648,7 +649,6 @@
       if (menu) menu.style.display = 'none';
     });
 
-    // মুভি কার্ড রেন্ডার
     function renderMovies(list) {
       const container = document.getElementById('moviesList');
       container.innerHTML = '';
@@ -707,7 +707,6 @@
 
       document.getElementById('modalTitle').innerText = currentMovie.title;
 
-      // মডালের ভেতর Genre ও Language তথ্য দেখানো
       let subDetailsText = [];
       if (currentMovie.rating) subDetailsText.push(currentMovie.rating);
       if (currentMovie.date) subDetailsText.push(currentMovie.date);
